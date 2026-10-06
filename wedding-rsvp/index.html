@@ -207,6 +207,34 @@ tr:last-child td{border-bottom:0}
 .seat-card .mates span{color:var(--muted)}
 .seat-foot{text-align:center;margin:16px 0 0}
 .my-seat{margin-top:6px;font-family:var(--f-display);font-size:18px;color:var(--red);font-weight:700}
+/* ===== venue plan ===== */
+.plan-admin{display:flex;flex-direction:column;gap:14px}
+.fx-editor{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#fff;border:1px solid var(--gold-line);border-radius:6px;padding:10px 14px}
+.fx-editor label{font-size:14px}
+.fx-editor input{width:auto;flex:1 1 160px;min-width:0;padding:7px 10px}
+.venue-wrap{width:100%;max-width:100%}
+.venue{position:relative;width:100%;aspect-ratio:4/3;max-width:100%;container-type:inline-size;border-radius:8px;overflow:hidden;
+  background-color:#FBF4E4;
+  background-image:linear-gradient(rgba(140,95,23,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(140,95,23,.07) 1px,transparent 1px);
+  background-size:5% 6.6667%;box-shadow:inset 0 0 0 1.5px var(--gold-line),inset 0 0 0 5px #FBF4E4,inset 0 0 0 6px var(--gold-line)}
+.venue .t,.venue .fx{position:absolute;transform:translate(-50%,-50%);display:grid;place-items:center;user-select:none;-webkit-user-select:none}
+.venue .t{width:8.5%;aspect-ratio:1;border-radius:50%;background:#fff;border:2px solid var(--gold);color:var(--ink);font-family:var(--f-display);font-weight:900;font-size:3cqw;line-height:1;font-variant-numeric:tabular-nums;transition:transform .2s,background .2s}
+.venue .t small{display:block;font-family:var(--f-body);font-weight:500;font-size:1.6cqw;color:var(--muted);margin-top:.3cqw;text-align:center}
+.venue .t.m{border-color:#3E5C8A}.venue .t.f{border-color:var(--red)}.venue .t.mix{border-color:var(--gold-ink)}
+.venue .t.dim{opacity:.45}
+.venue .t.hit{background:var(--red);border-color:var(--gold);color:#FFE9BC;transform:translate(-50%,-50%) scale(1.35);z-index:3;opacity:1;box-shadow:0 0 0 1cqw rgba(181,18,27,.18)}
+.venue .t.hit small{color:#FFE9BC}
+.venue .pin{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-.6cqw);white-space:nowrap;background:var(--ink);color:#fff;font:700 2cqw var(--f-body);padding:.5cqw 1.2cqw;border-radius:1cqw}
+.venue .fx{background:var(--paper-2);border:1.5px dashed var(--gold-ink);color:var(--gold-ink);border-radius:1cqw;font:700 2.2cqw var(--f-display);letter-spacing:.15em;padding:0 1cqw;text-align:center;overflow:hidden}
+.venue .fx.stage{background:var(--red);color:#FFE9BC;border:1.5px solid var(--gold)}
+.venue.editable .t,.venue.editable .fx{cursor:grab;touch-action:none}
+.venue.editable .dragging{cursor:grabbing;z-index:5;box-shadow:0 6px 16px rgba(60,0,0,.25)}
+@media (prefers-reduced-motion:no-preference){.venue .t.hit{animation:pulse 1.6s ease-in-out infinite}@keyframes pulse{50%{box-shadow:0 0 0 2.2cqw rgba(181,18,27,.08)}}}
+.guest-plan{display:flex;flex-direction:column;gap:8px;margin-top:20px}
+.plan-title{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.plan-title b{font-family:var(--f-display);color:var(--red-deep);letter-spacing:.08em}
+.seat-card{cursor:pointer}
+.seat-card.on{border-color:var(--red);box-shadow:0 0 0 2px var(--red-soft)}
 .lock{text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
 .lock-icon{width:68px;height:68px;border-radius:50%;display:grid;place-items:center;color:var(--red);border:1.5px solid var(--gold);background:var(--paper-2)}
 .lock .sub{margin:0;max-width:34em}
@@ -399,6 +427,34 @@ tr:last-child td{border-bottom:0}
     <div class="seg" role="tablist" aria-label="後台功能">
       <button type="button" role="tab" id="seg-stats" aria-selected="true">回函統計</button>
       <button type="button" role="tab" id="seg-seat" aria-selected="false">桌次安排</button>
+      <button type="button" role="tab" id="seg-plan" aria-selected="false">場地配置</button>
+    </div>
+
+    <!-- ===== 場地配置 ===== -->
+    <div id="dash-plan" class="plan-admin" hidden>
+      <div class="seat-bar">
+        <div class="seat-bar-l">
+          <span class="hint">拖曳桌子和標示，排成跟美滿廳現場一樣的位置。</span>
+        </div>
+        <div class="seat-bar-r">
+          <button class="btn" type="button" id="add-fx">新增標示</button>
+          <button class="btn" type="button" id="reset-plan">重新排列</button>
+        </div>
+      </div>
+      <div class="fx-editor" id="fx-editor" hidden>
+        <label for="fx-name">標示名稱</label>
+        <input type="text" id="fx-name" maxlength="10" placeholder="例：新娘休息室、收禮台">
+        <button class="btn primary" type="button" id="fx-save">儲存</button>
+        <button class="btn danger" type="button" id="fx-del">刪除這個標示</button>
+        <button class="btn" type="button" id="fx-cancel">取消</button>
+      </div>
+      <div class="confirm" id="plan-confirm" hidden>
+        <span>重新排列會把所有桌子和標示放回預設位置。</span>
+        <button class="btn danger" id="plan-yes" type="button">重新排列</button>
+        <button class="btn" id="plan-no" type="button">取消</button>
+      </div>
+      <div class="venue-wrap"><div class="venue editable" id="plan-admin"></div></div>
+      <p class="hint" id="plan-hint">點一下標示可以改名或刪除。桌子數量跟著「桌次安排」自動增減，桌框顏色代表男方（藍）、女方（紅）、混桌（金）。</p>
     </div>
 
     <!-- ===== 桌次安排 ===== -->
@@ -479,6 +535,10 @@ tr:last-child td{border-bottom:0}
       <input type="text" id="seat-q" placeholder="請輸入姓名，例：王雅婷" autocomplete="name" aria-label="姓名">
     </div>
     <div class="seat-results" id="seat-results"><p class="hint seat-tip">輸入姓名中的任一個字就會開始搜尋。</p></div>
+    <div class="guest-plan">
+      <div class="plan-title"><b>美滿廳座位圖</b><span class="hint" id="plan-guest-note">搜尋後會標出您的桌子</span></div>
+      <div class="venue-wrap"><div class="venue" id="plan-guest"></div></div>
+    </div>
     <p class="hint seat-foot">找不到您的名字？可能是由同行親友代為登記，請試著搜尋他的姓名，或當天洽詢會場接待處。</p>
   </section>
 </div>
@@ -737,13 +797,15 @@ tr:last-child td{border-bottom:0}
 
   // ---------- 後台分段 ----------
   function setSeg(which) {
-    $("seg-stats").setAttribute("aria-selected", String(which === "stats"));
-    $("seg-seat").setAttribute("aria-selected", String(which === "seat"));
-    $("dash-stats").hidden = which !== "stats";
-    $("dash-seat").hidden = which !== "seat";
+    for (const k of ["stats", "seat", "plan"]) {
+      $("seg-" + k).setAttribute("aria-selected", String(which === k));
+      $("dash-" + k).hidden = which !== k;
+    }
+    if (which === "plan") renderPlanAdmin();
   }
   $("seg-stats").addEventListener("click", () => setSeg("stats"));
   $("seg-seat").addEventListener("click", () => setSeg("seat"));
+  $("seg-plan").addEventListener("click", () => setSeg("plan"));
 
   // ---------- 桌次安排（後台） ----------
   const going = () => rows.filter(r => r.attend === "yes" && (r.adults || 0) + (r.kids || 0) > 0);
@@ -751,7 +813,7 @@ tr:last-child td{border-bottom:0}
   let saveChain = Promise.resolve();
 
   function persistSeat() {
-    const cfg = { capacity: seatCfg.capacity, assign: seatCfg.assign, published: seatCfg.published, updatedAt: new Date().toISOString() };
+    const cfg = { capacity: seatCfg.capacity, assign: seatCfg.assign, published: seatCfg.published, layout: seatCfg.layout || null, updatedAt: new Date().toISOString() };
     saveChain = saveChain.then(async () => {
       try {
         await db.doc("config/seating").set(cfg);
@@ -764,8 +826,153 @@ tr:last-child td{border-bottom:0}
     const entries = going().filter(r => seatCfg.assign[r._id]).map(r => ({
       id: r._id, name: r.name, side: r.side, group: r.group, table: seatCfg.assign[r._id], size: size(r)
     }));
-    return { entries, capacity: seatCfg.capacity, publishedAt: new Date().toISOString() };
+    const maxT = Math.max(0, ...entries.map(e => e.table));
+    return { entries, capacity: seatCfg.capacity, layout: fullLayout(maxT), publishedAt: new Date().toISOString() };
   }
+
+  // ---------- 場地平面圖 ----------
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const DEFAULT_FX = () => [
+    { id: "stage", label: "舞台", x: 50, y: 8, w: 36, h: 8, stage: true },
+    { id: "door", label: "入口", x: 50, y: 95, w: 16, h: 6 },
+  ];
+  function defaultTablePos(n) {
+    const cols = n <= 4 ? Math.max(1, n) : n <= 12 ? 4 : n <= 20 ? 5 : 6;
+    const rows = Math.ceil(n / cols);
+    const pos = {};
+    for (let i = 0; i < n; i++) {
+      const r = Math.floor(i / cols), c = i % cols;
+      const inRow = Math.min(cols, n - r * cols);
+      const gap = 84 / Math.max(cols, 1);
+      const x = 50 + (c - (inRow - 1) / 2) * gap;
+      const y = rows === 1 ? 50 : 24 + r * (62 / Math.max(rows - 1, 1));
+      pos[i + 1] = { x: +x.toFixed(2), y: +y.toFixed(2) };
+    }
+    return pos;
+  }
+  function fullLayout(maxT) {
+    const L = seatCfg.layout || {};
+    const def = defaultTablePos(maxT);
+    const tables = {};
+    for (let t = 1; t <= maxT; t++) tables[t] = (L.tables && L.tables[t]) || def[t];
+    return { tables, fixtures: Array.isArray(L.fixtures) ? L.fixtures : DEFAULT_FX() };
+  }
+  function ensureLayout(maxT) {
+    seatCfg.layout = fullLayout(maxT);
+    return seatCfg.layout;
+  }
+
+  // 共用繪製：opts = { tableInfo(t) -> {cls, sub}, hit, pinText }
+  function drawPlan(el, layout, opts = {}) {
+    let h = "";
+    for (const f of layout.fixtures) {
+      h += `<div class="fx${f.stage ? " stage" : ""}" data-fx="${esc(f.id)}" style="left:${f.x}%;top:${f.y}%;width:${f.w}%;height:${f.h}%">${esc(f.label)}</div>`;
+    }
+    for (const [t, p] of Object.entries(layout.tables)) {
+      const info = opts.tableInfo ? opts.tableInfo(+t) : {};
+      const hit = opts.hit === +t;
+      const cls = ["t", info.cls || "", hit ? "hit" : (opts.hit ? "dim" : "")].join(" ");
+      h += `<div class="${cls}" data-t="${t}" style="left:${p.x}%;top:${p.y}%" aria-label="第 ${t} 桌">${hit && opts.pinText ? `<span class="pin">${esc(opts.pinText)}</span>` : ""}<span>${t}${info.sub ? `<small>${esc(info.sub)}</small>` : ""}</span></div>`;
+    }
+    el.innerHTML = h;
+  }
+
+  function currentAssign() {
+    const ids = new Set(going().map(r => r._id));
+    const a = {};
+    for (const [k, v] of Object.entries(seatCfg.assign || {})) if (ids.has(k) && v) a[k] = v;
+    return a;
+  }
+  function renderPlanAdmin() {
+    if (!isHost || $("dash-plan").hidden || drag) return;
+    const assign = currentAssign();
+    const maxT = Math.max(0, ...Object.values(assign));
+    const layout = fullLayout(maxT);
+    const list = going();
+    drawPlan($("plan-admin"), layout, {
+      tableInfo: t => {
+        const ps = list.filter(r => assign[r._id] === t);
+        const sides = new Set(ps.map(r => r.side));
+        const used = ps.reduce((a, r) => a + size(r), 0);
+        return { cls: sides.size > 1 ? "mix" : sides.has("男方") ? "m" : sides.has("女方") ? "f" : "", sub: `${used}/${seatCfg.capacity}` };
+      }
+    });
+    $("plan-hint").hidden = false;
+    if (!maxT) $("plan-admin").insertAdjacentHTML("beforeend", `<div class="fx" style="left:50%;top:50%;width:60%;height:12%;border-style:solid;letter-spacing:0">先到「桌次安排」排好桌，桌子就會出現在這裡</div>`);
+  }
+
+  // 拖曳
+  let drag = null;
+  $("plan-admin").addEventListener("pointerdown", e => {
+    const node = e.target.closest(".t,.fx[data-fx]");
+    if (!node) return;
+    const venue = $("plan-admin").getBoundingClientRect();
+    drag = { node, id: node.dataset.t || node.dataset.fx, kind: node.dataset.t ? "t" : "fx", venue, sx: e.clientX, sy: e.clientY, moved: false };
+    node.setPointerCapture(e.pointerId);
+    node.classList.add("dragging");
+  });
+  $("plan-admin").addEventListener("pointermove", e => {
+    if (!drag) return;
+    if (Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) > 4) drag.moved = true;
+    if (!drag.moved) return;
+    const x = clamp((e.clientX - drag.venue.left) / drag.venue.width * 100, 3, 97);
+    const y = clamp((e.clientY - drag.venue.top) / drag.venue.height * 100, 3, 97);
+    drag.node.style.left = x + "%"; drag.node.style.top = y + "%";
+    drag.x = +x.toFixed(2); drag.y = +y.toFixed(2);
+  });
+  const endDrag = () => {
+    if (!drag) return;
+    const d = drag; drag = null;
+    d.node.classList.remove("dragging");
+    if (!d.moved) { if (d.kind === "fx") openFx(d.id); return; }
+    const maxT = Math.max(0, ...Object.values(currentAssign()));
+    const L = ensureLayout(maxT);
+    if (d.kind === "t") L.tables[d.id] = { x: d.x, y: d.y };
+    else { const f = L.fixtures.find(f => f.id === d.id); if (f) { f.x = d.x; f.y = d.y; } }
+    persistSeat();
+  };
+  $("plan-admin").addEventListener("pointerup", endDrag);
+  $("plan-admin").addEventListener("pointercancel", endDrag);
+
+  // 標示編輯
+  let fxEditing = null;
+  function openFx(id) {
+    const maxT = Math.max(0, ...Object.values(currentAssign()));
+    const L = ensureLayout(maxT);
+    const f = id ? L.fixtures.find(f => f.id === id) : null;
+    fxEditing = id || null;
+    $("fx-name").value = f ? f.label : "";
+    $("fx-del").hidden = !f;
+    $("fx-editor").hidden = false;
+    $("fx-name").focus();
+  }
+  $("add-fx").addEventListener("click", () => openFx(null));
+  $("fx-cancel").addEventListener("click", () => { $("fx-editor").hidden = true; });
+  $("fx-save").addEventListener("click", () => {
+    const label = $("fx-name").value.trim();
+    if (!label) { $("fx-name").classList.add("invalid"); return; }
+    $("fx-name").classList.remove("invalid");
+    const maxT = Math.max(0, ...Object.values(currentAssign()));
+    const L = ensureLayout(maxT);
+    if (fxEditing) { const f = L.fixtures.find(f => f.id === fxEditing); if (f) f.label = label; }
+    else L.fixtures.push({ id: "fx" + Date.now().toString(36), label, x: 12, y: 50, w: Math.min(24, 6 + label.length * 3), h: 6 });
+    $("fx-editor").hidden = true;
+    renderPlanAdmin(); persistSeat();
+  });
+  $("fx-del").addEventListener("click", () => {
+    const maxT = Math.max(0, ...Object.values(currentAssign()));
+    const L = ensureLayout(maxT);
+    L.fixtures = L.fixtures.filter(f => f.id !== fxEditing);
+    $("fx-editor").hidden = true;
+    renderPlanAdmin(); persistSeat();
+  });
+  $("reset-plan").addEventListener("click", () => { $("plan-confirm").hidden = false; });
+  $("plan-no").addEventListener("click", () => { $("plan-confirm").hidden = true; });
+  $("plan-yes").addEventListener("click", () => {
+    $("plan-confirm").hidden = true;
+    seatCfg.layout = null;
+    renderPlanAdmin(); persistSeat();
+  });
 
   function autoArrange() {
     const cap = seatCfg.capacity;
@@ -826,7 +1033,7 @@ tr:last-child td{border-bottom:0}
         ${ps.map(r => `<div class="party"><span class="pn">${esc(r.name)}<small>${esc(r.group)}・${size(r)} 位${r.childSeats ? "・兒童椅 " + r.childSeats : ""}${r.veg ? "・素 " + r.veg : ""}</small></span><select data-id="${r._id}" aria-label="${esc(r.name)} 的桌次">${tableOptions(t, maxT)}</select></div>`).join("") || `<span class="hint">這桌目前沒有人</span>`}
       </div>`;
     }
-    $("tables").innerHTML = html || `<div class="empty">按「自動排桌」依男女方與親友分類一次排好，再用每組旁邊的選單微調。</div>`;
+    $("tables").innerHTML = html || `<div class="empty">按「自動排桌」依男女方與親友分類一次排好，再用每組旁邊的選單微調。</div>`;    renderPlanAdmin();
   }
   $("dash-seat").addEventListener("change", e => {
     const sel = e.target.closest("select[data-id]");
@@ -849,21 +1056,39 @@ tr:last-child td{border-bottom:0}
   });
 
   // ---------- 桌次查詢（前台） ----------
+  let seatPick = null;
+  function drawGuestPlan(hitEntry) {
+    if (!publicSeat) return;
+    const layout = publicSeat.layout && publicSeat.layout.tables ? publicSeat.layout
+      : { tables: defaultTablePos(Math.max(0, ...publicSeat.entries.map(e => e.table))), fixtures: DEFAULT_FX() };
+    drawPlan($("plan-guest"), layout, { hit: hitEntry ? hitEntry.table : null, pinText: hitEntry ? `${hitEntry.name}・第 ${hitEntry.table} 桌` : "" });
+    $("plan-guest-note").textContent = hitEntry ? `紅色圓圈是 ${hitEntry.name} 的座位` : "搜尋後會標出您的桌子";
+  }
   function renderSeatSearch() {
     const q = $("seat-q").value.trim();
     const box = $("seat-results");
     if (!publicSeat) return;
-    if (!q) { box.innerHTML = `<p class="hint seat-tip">輸入姓名中的任一個字就會開始搜尋。</p>`; return; }
+    if (!q) { box.innerHTML = `<p class="hint seat-tip">輸入姓名中的任一個字就會開始搜尋。</p>`; seatPick = null; drawGuestPlan(null); return; }
     const hits = publicSeat.entries.filter(e => e.name.includes(q)).slice(0, 6);
-    if (!hits.length) { box.innerHTML = `<p class="hint seat-tip">查不到「${esc(q)}」，請確認姓名是否與回函相同。</p>`; return; }
+    if (!hits.length) { box.innerHTML = `<p class="hint seat-tip">查不到「${esc(q)}」，請確認姓名是否與回函相同。</p>`; seatPick = null; drawGuestPlan(null); return; }
+    if (!seatPick || !hits.some(h => h.id === seatPick)) seatPick = hits[0].id;
     box.innerHTML = hits.map(e => {
       const mates = publicSeat.entries.filter(x => x.table === e.table && x.id !== e.id).map(x => esc(x.name));
-      return `<div class="seat-card"><div class="big"><small>第</small><b>${e.table}</b><small>桌</small></div>
+      return `<div class="seat-card${e.id === seatPick ? " on" : ""}" data-id="${esc(e.id)}" role="button" tabindex="0"><div class="big"><small>第</small><b>${e.table}</b><small>桌</small></div>
         <div class="who">${esc(e.name)}</div>
         <div class="meta2">${esc(e.side)}親友・${esc(e.group)}・共 ${e.size} 位</div>
         <div class="mates">${mates.length ? `<span>同桌：</span>${mates.join("、")}` : `<span>同桌親友安排中</span>`}</div></div>`;
     }).join("");
+    drawGuestPlan(hits.find(h => h.id === seatPick));
   }
+  const pickCard = e => {
+    const c = e.target.closest(".seat-card[data-id]");
+    if (!c) return;
+    seatPick = c.dataset.id; renderSeatSearch();
+    $("plan-guest").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+  };
+  $("seat-results").addEventListener("click", pickCard);
+  $("seat-results").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pickCard(e); } });
   $("seat-q").addEventListener("input", renderSeatSearch);
 
   // ---------- capabilities ----------
@@ -898,7 +1123,7 @@ tr:last-child td{border-bottom:0}
       db.doc("config/seating").onSnapshot(snap => {
         if (snap.exists) {
           const d = snap.data();
-          seatCfg = { capacity: d.capacity || 10, assign: { ...(d.assign || {}) }, published: !!d.published };
+          seatCfg = { capacity: d.capacity || 10, assign: { ...(d.assign || {}) }, published: !!d.published, layout: d.layout || null };
         }
         seatCfgLoaded = true;
         renderSeatAdmin();
