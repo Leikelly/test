@@ -160,6 +160,13 @@ tr:last-child td{border-bottom:0}
 .note p{margin:0;font-family:var(--f-display);font-size:15px;line-height:1.75;overflow-wrap:anywhere}
 .note footer{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);gap:8px}
 
+.lock{text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.lock-icon{width:68px;height:68px;border-radius:50%;display:grid;place-items:center;color:var(--red);border:1.5px solid var(--gold);background:var(--paper-2)}
+.lock .sub{margin:0;max-width:34em}
+.lock-steps{display:flex;flex-direction:column;gap:10px;width:100%;text-align:left;margin-block:8px}
+.lock-steps div{display:flex;flex-direction:column;gap:2px;background:#fff;border:1px solid var(--gold-line);border-radius:6px;padding:12px 14px;font-size:14px}
+.lock-steps b{color:var(--red-deep);font-weight:700}
+.lock-steps span{color:var(--muted)}
 .confirm{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#FFF1EF;border:1px solid #E5A9A3;border-radius:6px;padding:10px 14px;font-size:14px;color:var(--red-deep)}
 
 @media (prefers-reduced-motion:no-preference){.card,.dash{animation:rise .5s ease-out both}@keyframes rise{from{transform:translateY(8px)}to{transform:none}}}
@@ -172,7 +179,7 @@ tr:last-child td{border-bottom:0}
     <div class="meta"><b>114 年 5 月 20 日（六）12:00 入席</b>　幸也婚宴會館 美滿廳</div>
   </header>
 
-  <nav class="tabs" role="tablist" id="tabs" hidden>
+  <nav class="tabs" role="tablist" id="tabs">
     <button role="tab" id="tab-form" aria-selected="true">填寫回函</button>
     <button role="tab" id="tab-dash" aria-selected="false">新人後台</button>
   </nav>
@@ -306,6 +313,21 @@ tr:last-child td{border-bottom:0}
       <p id="thanks-msg"></p>
       <button class="ghost" id="edit-again" type="button">修改我的回函</button>
     </div>
+  </section>
+
+  <!-- ===== 後台鎖定畫面 ===== -->
+  <section class="card lock" id="view-lock" hidden>
+    <div class="lock-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.3" fill="currentColor"/></svg>
+    </div>
+    <h2>新人後台</h2>
+    <p class="sub">這裡有所有親友的聯絡電話與地址，只開放給新人和新人授權的人查看。</p>
+    <div class="lock-steps">
+      <div><b>我是新人</b><span>請用建立這個頁面的 Claude 帳號登入後重新整理。</span></div>
+      <div><b>我是婚顧或幫忙的家人</b><span>請新人在頁面右上角的「分享」選單，把你的帳號設為「編輯者（Editor）」。</span></div>
+    </div>
+    <p class="hint" id="lock-status">目前的帳號沒有後台權限。</p>
+    <button class="ghost" type="button" id="lock-back">回到填寫回函</button>
   </section>
 
   <!-- ===== 後台 ===== -->
@@ -496,12 +518,15 @@ tr:last-child td{border-bottom:0}
     const dash = which === "dash";
     $("tab-form").setAttribute("aria-selected", String(!dash));
     $("tab-dash").setAttribute("aria-selected", String(dash));
-    $("view-form").hidden = dash; $("view-dash").hidden = !dash;
-    $("wrap").classList.toggle("wide", dash);
+    $("view-form").hidden = dash;
+    $("view-dash").hidden = !(dash && isHost);
+    $("view-lock").hidden = !(dash && !isHost);
+    $("wrap").classList.toggle("wide", dash && isHost);
     try { localStorage.setItem("rsvp-tab", which); } catch {}
   }
   $("tab-form").addEventListener("click", () => setTab("form"));
   $("tab-dash").addEventListener("click", () => setTab("dash"));
+  $("lock-back").addEventListener("click", () => setTab("form"));
 
   // ---------- dashboard ----------
   const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -592,11 +617,12 @@ tr:last-child td{border-bottom:0}
 
   // ---------- capabilities ----------
   async function boot() {
-    if (!window.claude || !window.claude.use) { $("db-notice").hidden = false; return; }
+    const noAccess = msg => { $("db-notice").hidden = false; $("lock-status").textContent = msg; };
+    if (!window.claude || !window.claude.use) { noAccess("這個網址版沒有連接回函資料庫，後台只能在新人的 Claude 頁面中查看。"); return; }
     [db, user, downloads] = await Promise.all([claude.use("db"), claude.use("user"), claude.use("downloads")]);
-    if (!db) { $("db-notice").hidden = false; return; }
+    if (!db) { noAccess("尚未登入 Claude，無法確認身分。"); return; }
     myId = user ? await user.id() : null;
-    if (!myId) { $("db-notice").hidden = false; return; }
+    if (!myId) { noAccess("尚未登入 Claude，無法確認身分。"); return; }
     isHost = user ? await user.canEdit() : false;
     isOwnerFlag = user ? await user.isOwner() : false;
 
@@ -606,7 +632,6 @@ tr:last-child td{border-bottom:0}
     } catch {}
 
     if (isHost) {
-      $("tabs").hidden = false;
       let saved = null; try { saved = localStorage.getItem("rsvp-tab"); } catch {}
       setTab(saved === "form" ? "form" : "dash");
       unsub = db.collection("rsvps").onSnapshot(snap => {
