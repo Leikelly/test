@@ -179,7 +179,7 @@ tr:last-child td{border-bottom:0}
     <div class="meta"><b>114 年 5 月 20 日（六）12:00 入席</b>　幸也婚宴會館 美滿廳</div>
   </header>
 
-  <nav class="tabs" role="tablist" id="tabs">
+  <nav class="tabs" role="tablist" id="tabs" hidden>
     <button role="tab" id="tab-form" aria-selected="true">填寫回函</button>
     <button role="tab" id="tab-dash" aria-selected="false">新人後台</button>
   </nav>
@@ -522,8 +522,10 @@ tr:last-child td{border-bottom:0}
     $("view-dash").hidden = !(dash && isHost);
     $("view-lock").hidden = !(dash && !isHost);
     $("wrap").classList.toggle("wide", dash && isHost);
-    try { localStorage.setItem("rsvp-tab", which); } catch {}
   }
+  const wantsAdmin = () => location.hash === "#admin";
+  window.addEventListener("hashchange", () => setTab(wantsAdmin() ? "dash" : "form"));
+  if (wantsAdmin()) setTab("dash");
   $("tab-form").addEventListener("click", () => setTab("form"));
   $("tab-dash").addEventListener("click", () => setTab("dash"));
   $("lock-back").addEventListener("click", () => setTab("form"));
@@ -632,8 +634,8 @@ tr:last-child td{border-bottom:0}
     } catch {}
 
     if (isHost) {
-      let saved = null; try { saved = localStorage.getItem("rsvp-tab"); } catch {}
-      setTab(saved === "form" ? "form" : "dash");
+      $("tabs").hidden = false;
+      setTab(wantsAdmin() ? "dash" : "form");
       unsub = db.collection("rsvps").onSnapshot(snap => {
         rows = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
         renderDash();
